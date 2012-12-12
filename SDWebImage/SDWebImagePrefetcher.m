@@ -91,7 +91,7 @@
 
 - (void)prefetchURLs:(NSArray *)urls
 {
-    [self cancelPrefetching]; // Prevent duplicate prefetch request
+//    [self cancelPrefetching]; // Prevent duplicate prefetch request
     self.startedTime = CFAbsoluteTimeGetCurrent();
     self.prefetchURLs = urls;
 
