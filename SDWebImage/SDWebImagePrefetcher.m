@@ -109,7 +109,7 @@
     self.skippedCount = 0;
     self.requestedCount = 0;
     self.finishedCount = 0;
-    [self.manager cancelAll];
+//    [self.manager cancelAll];
 }
 
 @end
