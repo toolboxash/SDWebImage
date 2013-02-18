@@ -21,7 +21,7 @@
 @property (assign, nonatomic) long long expectedSize;
 @property (strong, nonatomic) NSMutableData *imageData;
 @property (strong, nonatomic) NSURLConnection *connection;
-@property (assign, nonatomic) dispatch_queue_t queue;
+@property (SDDispatchQueueSetterSementics, nonatomic) dispatch_queue_t queue;
 
 @end
 
@@ -71,6 +71,10 @@
 
         if (self.connection)
         {
+            if (self.progressBlock)
+            {
+                self.progressBlock(0, -1);
+            }
             [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStartNotification object:self];
         }
         else

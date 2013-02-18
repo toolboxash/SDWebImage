@@ -19,7 +19,9 @@ static NSString *const kCompletedCallbackKey = @"completed";
 @interface SDWebImageDownloader ()
 
 @property (strong, nonatomic) NSOperationQueue *downloadQueue;
+@property (weak, nonatomic) NSOperation *lastAddedOperation;
 @property (strong, nonatomic) NSMutableDictionary *URLCallbacks;
+@property (strong, nonatomic) NSMutableDictionary *HTTPHeaders;
 // This queue is used to serialize the handling of the network responses of all the download operation in a single queue
 @property (SDDispatchQueueSetterSementics, nonatomic) dispatch_queue_t workingQueue;
 @property (SDDispatchQueueSetterSementics, nonatomic) dispatch_queue_t barrierQueue;
@@ -65,9 +67,11 @@ static NSString *const kCompletedCallbackKey = @"completed";
 {
     if ((self = [super init]))
     {
+        _queueMode = SDWebImageDownloaderFILOQueueMode;
         _downloadQueue = NSOperationQueue.new;
         _downloadQueue.maxConcurrentOperationCount = 2;
         _URLCallbacks = NSMutableDictionary.new;
+        _HTTPHeaders = [NSMutableDictionary dictionaryWithObject:@"image/*" forKey:@"Accept"];
         _workingQueue = dispatch_queue_create("com.hackemist.SDWebImageDownloader", DISPATCH_QUEUE_SERIAL);
         _barrierQueue = dispatch_queue_create("com.hackemist.SDWebImageDownloaderBarrierQueue", DISPATCH_QUEUE_CONCURRENT);
     }
@@ -79,6 +83,23 @@ static NSString *const kCompletedCallbackKey = @"completed";
     [self.downloadQueue cancelAllOperations];
     SDDispatchQueueRelease(_workingQueue);
     SDDispatchQueueRelease(_barrierQueue);
+}
+
+- (void)setValue:(NSString *)value forHTTPHeaderField:(NSString *)field
+{
+    if (value)
+    {
+        self.HTTPHeaders[field] = value;
+    }
+    else
+    {
+        [self.HTTPHeaders removeObjectForKey:field];
+    }
+}
+
+- (NSString *)valueForHTTPHeaderField:(NSString *)field
+{
+    return self.HTTPHeaders[field];
 }
 
 - (void)setMaxConcurrentDownloads:(NSInteger)maxConcurrentDownloads
@@ -102,8 +123,8 @@ static NSString *const kCompletedCallbackKey = @"completed";
         NSMutableURLRequest *request = [NSMutableURLRequest.alloc initWithURL:url cachePolicy:NSURLCacheStorageNotAllowed timeoutInterval:15];
         request.HTTPShouldHandleCookies = NO;
         request.HTTPShouldUsePipelining = YES;
-        [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
-        operation = [SDWebImageDownloaderOperation.alloc initWithRequest:request queue:self.workingQueue options:options progress:^(NSUInteger receivedSize, long long expectedSize)
+        request.allHTTPHeaderFields = wself.HTTPHeaders;
+        operation = [SDWebImageDownloaderOperation.alloc initWithRequest:request queue:wself.workingQueue options:options progress:^(NSUInteger receivedSize, long long expectedSize)
         {
             if (!wself) return;
             SDWebImageDownloader *sself = wself;
@@ -136,7 +157,13 @@ static NSString *const kCompletedCallbackKey = @"completed";
             [sself callbacksForURL:url];
             [sself removeCallbacksForURL:url];
         }];
-        [self.downloadQueue addOperation:operation];
+        [wself.downloadQueue addOperation:operation];
+        if (wself.queueMode == SDWebImageDownloaderLIFOQueueMode)
+        {
+            // Emulate LIFO queue mode by systematically adding new operations as last operation's dependency
+            [wself.lastAddedOperation addDependency:operation];
+            wself.lastAddedOperation = operation;
+        }
     }];
 
     return operation;
@@ -144,6 +171,16 @@ static NSString *const kCompletedCallbackKey = @"completed";
 
 - (void)addProgressCallback:(void (^)(NSUInteger, long long))progressBlock andCompletedBlock:(void (^)(UIImage *, NSData *data, NSError *, BOOL))completedBlock forURL:(NSURL *)url createCallback:(void (^)())createCallback
 {
+    // The URL will be used as the key to the callbacks dictionary so it cannot be nil. If it is nil immediately call the completed block with no image or data.
+    if(url == nil)
+    {
+        if (completedBlock != nil)
+        {
+            completedBlock(nil, nil, nil, NO);
+        }
+        return;
+    }
+    
     dispatch_barrier_sync(self.barrierQueue, ^
     {
         BOOL first = NO;

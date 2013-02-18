@@ -17,6 +17,7 @@
 @property (assign, nonatomic) NSUInteger skippedCount;
 @property (assign, nonatomic) NSUInteger finishedCount;
 @property (assign, nonatomic) NSTimeInterval startedTime;
+@property (SDDispatchQueueSetterSementics, nonatomic) void (^completionBlock)(NSUInteger, NSUInteger);
 
 @end
 
@@ -79,6 +80,11 @@
         else if (self.finishedCount == self.requestedCount)
         {
             [self reportStatus];
+            if (self.completionBlock)
+            {
+                self.completionBlock(self.finishedCount, self.skippedCount);
+                self.completionBlock = nil;
+            }
         }
     }];
 }
@@ -91,9 +97,15 @@
 
 - (void)prefetchURLs:(NSArray *)urls
 {
-//    [self cancelPrefetching]; // Prevent duplicate prefetch request
+    [self prefetchURLs:urls completed:nil];
+}
+
+- (void)prefetchURLs:(NSArray *)urls completed:(void (^)(NSUInteger, NSUInteger))completionBlock
+{
+    [self cancelPrefetching]; // Prevent duplicate prefetch request
     self.startedTime = CFAbsoluteTimeGetCurrent();
     self.prefetchURLs = urls;
+    self.completionBlock = completionBlock;
 
     // Starts prefetching from the very first image on the list with the max allowed concurrency
     NSUInteger listCount = self.prefetchURLs.count;
@@ -109,7 +121,7 @@
     self.skippedCount = 0;
     self.requestedCount = 0;
     self.finishedCount = 0;
-//    [self.manager cancelAll];
+    [self.manager cancelAll];
 }
 
 @end

@@ -145,8 +145,7 @@ SDImageCache *imageCache = [SDImageCache.alloc initWithNamespace:@"myNamespace"]
 ```
 
 By default SDImageCache will lookup the disk cache if an image can't be found in the memory cache.
-You can prevent this from happening by calling the alternative method imageFromKey:fromDisk: with a
-negative second argument.
+You can prevent this from happening by calling the alternative method `imageFromMemoryCacheForKey:`.
 
 To store an image into the cache, you use the storeImage:forKey: method:
 
@@ -201,7 +200,7 @@ There are two ways to use this in your project: copy all the files into your pro
 
 ### Add the SDWebImage project to your project
 
-- Download and unzip the last version of the framework from the [download page](https://github.com/rs/SDWebImage/downloads)
+- Download and unzip the last version of the framework from the [download page](https://github.com/rs/SDWebImage/wiki/Download-Complied-Framework)
 - Right-click on the project navigator and select "Add Files to "Your Project":
 - In the dialog, select SDWebImage.framework:
 - Check the "Copy items into destination group's folder (if needed)" checkbox
