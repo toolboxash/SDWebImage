@@ -13,14 +13,30 @@
 typedef enum
 {
     SDWebImageDownloaderLowPriority = 1 << 0,
-    SDWebImageDownloaderProgressiveDownload = 1 << 1
+    SDWebImageDownloaderProgressiveDownload = 1 << 1,
+    /**
+     * By default, request prevent the of NSURLCache. With this flag, NSURLCache
+     * is used with default policies.
+     */
+    SDWebImageDownloaderUseNSURLCache = 1 << 2,
+    /**
+     * Call completion block with nil image/imageData if the image was read from NSURLCache
+     * (to be combined with `SDWebImageDownloaderUseNSURLCache`).
+     */
+    SDWebImageDownloaderIgnoreCachedResponse = 1 << 3
 } SDWebImageDownloaderOptions;
 
 typedef enum
 {
-    SDWebImageDownloaderFILOQueueMode,
-    SDWebImageDownloaderLIFOQueueMode
-} SDWebImageDownloaderQueueMode;
+    SDWebImageDownloaderFIFOExecutionOrder,
+    /**
+     * Default value. All download operations will execute in queue style (first-in-first-out).
+     */
+    SDWebImageDownloaderLIFOExecutionOrder
+    /**
+     * All download operations will execute in stack style (last-in-first-out).
+     */
+} SDWebImageDownloaderExecutionOrder;
 
 extern NSString *const SDWebImageDownloadStartNotification;
 extern NSString *const SDWebImageDownloadStopNotification;
@@ -36,9 +52,9 @@ typedef void(^SDWebImageDownloaderCompletedBlock)(UIImage *image, NSData *data, 
 @property (assign, nonatomic) NSInteger maxConcurrentDownloads;
 
 /**
- * Changes download operations unqueue mode. Default value is `SDWebImageDownloaderFILOQueueMode`.
+ * Changes download operations execution order. Default value is `SDWebImageDownloaderFIFOExecutionOrder`.
  */
-@property (assign, nonatomic) SDWebImageDownloaderQueueMode queueMode;
+@property (assign, nonatomic) SDWebImageDownloaderExecutionOrder executionOrder;
 
 + (SDWebImageDownloader *)sharedDownloader;
 

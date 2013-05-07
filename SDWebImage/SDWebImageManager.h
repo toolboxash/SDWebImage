@@ -31,7 +31,16 @@ typedef enum
      * This flag enables progressive download, the image is displayed progressively during download as a browser would do.
      * By default, the image is only displayed once completely downloaded.
      */
-    SDWebImageProgressiveDownload = 1 << 3
+    SDWebImageProgressiveDownload = 1 << 3,
+    /**
+     * Even if the image is cached, respect the HTTP response cache control, and refresh the image from remote location if needed.
+     * The disk caching will be handled by NSURLCache instead of SDWebImage leading to slight performance degradation.
+     * This option helps deal with images changing behind the same request URL, e.g. Facebook graph api profile pics.
+     * If a cached image is refreshed, the completion block is called once with the cached image and again with the final image.
+     *
+     * Use this flag only if you can't make your URLs static with embeded cache busting parameter.
+     */
+    SDWebImageRefreshCached = 1 << 4
 } SDWebImageOptions;
 
 typedef void(^SDWebImageCompletedBlock)(UIImage *image, NSError *error, SDImageCacheType cacheType);
