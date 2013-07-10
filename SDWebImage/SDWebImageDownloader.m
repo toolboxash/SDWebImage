@@ -70,7 +70,7 @@ static NSString *const kCompletedCallbackKey = @"completed";
         _downloadQueue = NSOperationQueue.new;
         _downloadQueue.maxConcurrentOperationCount = 2;
         _URLCallbacks = NSMutableDictionary.new;
-        _HTTPHeaders = [NSMutableDictionary dictionaryWithObject:@"image/*" forKey:@"Accept"];
+        _HTTPHeaders = [NSMutableDictionary dictionaryWithObject:@"image/webp,image/*;q=0.8" forKey:@"Accept"];
         _barrierQueue = dispatch_queue_create("com.hackemist.SDWebImageDownloaderBarrierQueue", DISPATCH_QUEUE_CONCURRENT);
     }
     return self;
@@ -151,7 +151,6 @@ static NSString *const kCompletedCallbackKey = @"completed";
         {
             if (!wself) return;
             SDWebImageDownloader *sself = wself;
-            [sself callbacksForURL:url];
             [sself removeCallbacksForURL:url];
         }];
         [wself.downloadQueue addOperation:operation];
@@ -161,6 +160,7 @@ static NSString *const kCompletedCallbackKey = @"completed";
             [wself.lastAddedOperation addDependency:operation];
             wself.lastAddedOperation = operation;
         }
+        operation = nil; // break retain cycle
     }];
 
     return operation;
